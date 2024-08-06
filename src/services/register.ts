@@ -1,28 +1,30 @@
 import { UserEntity, UserProps } from '@/entities/User'
-import { PrismaUsersRepository } from '@/repositories/prisma-users-repository'
 import { prisma } from '@/lib/prisma'
+import { UsersRepository } from '@/repositories/users-repository'
 import { hash } from 'bcryptjs'
 
-export async function registerService({ name, email, password }: UserProps) {
-  const userWithSameEmail = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-  })
+export class RegisterService {
+  constructor(private usersRepository: UsersRepository) {}
 
-  if (userWithSameEmail) {
-    throw new Error('E-mail alredy exists')
+  async execute({ name, email, password }: UserProps) {
+    const userWithSameEmail = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    })
+
+    if (userWithSameEmail) {
+      throw new Error('E-mail alredy exists')
+    }
+
+    const user = new UserEntity({ name, email, password })
+
+    const passwordHash = await hash(user.getPassword, 6)
+
+    await this.usersRepository.create({
+      name: user.getName,
+      email: user.getEmail,
+      password: passwordHash,
+    })
   }
-
-  const user = new UserEntity({ name, email, password })
-
-  const passwordHash = await hash(user.getPassword, 6)
-
-  const prismaUsersRepository = new PrismaUsersRepository()
-
-  await prismaUsersRepository.create({
-    name: user.getName,
-    email: user.getEmail,
-    password: passwordHash,
-  })
 }
