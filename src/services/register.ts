@@ -6,7 +6,9 @@ export class RegisterService {
   constructor(private usersRepository: UsersRepository) {}
 
   async execute({ name, email, password }: UserProps) {
-    if (await this.usersRepository.findUserWithSameEmail(email)) {
+    const userWithSameEmail = await this.usersRepository.findByEmail(email)
+
+    if (userWithSameEmail) {
       throw new Error('E-mail alredy exists')
     }
 
