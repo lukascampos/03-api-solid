@@ -1,28 +1,30 @@
 import { describe, it, expect } from 'vitest'
 import { RegisterService } from './register'
 import { compare } from 'bcryptjs'
+import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-users-repository'
+import { UserAlredyExistsError } from './errors/user-alredy-exists-error'
 
 describe('Register Service', () => {
-  it('Should hash user password', async () => {
-    const registerService = new RegisterService({
-      async findByEmail() {
-        return null
-      },
-
-      async create(data) {
-        return {
-          id: 'user1',
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          created_at: new Date(),
-        }
-      },
-    })
+  it('Should be able to register', async () => {
+    const usersRepository = new InMemoryUsersRepository()
+    const registerService = new RegisterService(usersRepository)
 
     const { userCreated } = await registerService.execute({
       name: 'John Doe',
-      email: 'johndoe@gmail.com',
+      email: 'johndoe@example.com',
+      password: 'test123',
+    })
+
+    expect(userCreated.id).toEqual(expect.any(String))
+  })
+
+  it('Should hash user password', async () => {
+    const usersRepository = new InMemoryUsersRepository()
+    const registerService = new RegisterService(usersRepository)
+
+    const { userCreated } = await registerService.execute({
+      name: 'John Doe',
+      email: 'johndoe@example.com',
       password: 'test123',
     })
 
@@ -32,5 +34,26 @@ describe('Register Service', () => {
     )
 
     expect(isPasswordCorrectlyHashed).toBe(true)
+  })
+
+  it('Should not be able to register with same email twice', async () => {
+    const usersRepository = new InMemoryUsersRepository()
+    const registerService = new RegisterService(usersRepository)
+
+    const email = 'johndoe@example.com'
+
+    await registerService.execute({
+      name: 'John Doe',
+      email,
+      password: 'test123',
+    })
+
+    await expect(() =>
+      registerService.execute({
+        name: 'John Doe',
+        email,
+        password: 'test123',
+      }),
+    ).rejects.toBeInstanceOf(UserAlredyExistsError)
   })
 })
