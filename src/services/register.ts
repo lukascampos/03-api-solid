@@ -1,4 +1,5 @@
 import { UserEntity, UserProps } from '@/entities/User'
+import { PrismaUsersRepository } from '@/repositories/prisma-users-repository'
 import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 
@@ -17,11 +18,11 @@ export async function registerService({ name, email, password }: UserProps) {
 
   const passwordHash = await hash(user.getPassword, 6)
 
-  await prisma.user.create({
-    data: {
-      name: user.getName,
-      email: user.getEmail,
-      password: passwordHash,
-    },
+  const prismaUsersRepository = new PrismaUsersRepository()
+
+  await prismaUsersRepository.create({
+    name: user.getName,
+    email: user.getEmail,
+    password: passwordHash,
   })
 }
