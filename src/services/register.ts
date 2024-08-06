@@ -1,6 +1,7 @@
 import { UserEntity, UserProps } from '@/entities/User'
 import { UsersRepository } from '@/repositories/users-repository'
 import { hash } from 'bcryptjs'
+import { UserAlredyExistsError } from './errors/user-alredy-exists-error'
 
 export class RegisterService {
   constructor(private usersRepository: UsersRepository) {}
@@ -9,7 +10,7 @@ export class RegisterService {
     const userWithSameEmail = await this.usersRepository.findByEmail(email)
 
     if (userWithSameEmail) {
-      throw new Error('E-mail alredy exists')
+      throw new UserAlredyExistsError()
     }
 
     const user = new UserEntity({ name, email, password })
