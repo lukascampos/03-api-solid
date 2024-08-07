@@ -1,15 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { RegisterService } from './register'
 import { compare } from 'bcryptjs'
 import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-users-repository'
 import { UserAlredyExistsError } from './errors/user-alredy-exists-error'
 
-describe('Register Service', () => {
-  it('Should be able to register', async () => {
-    const usersRepository = new InMemoryUsersRepository()
-    const registerService = new RegisterService(usersRepository)
+let usersRepository: InMemoryUsersRepository
+let sut: RegisterService
 
-    const { userCreated } = await registerService.execute({
+describe('Register Service', () => {
+  beforeEach(() => {
+    usersRepository = new InMemoryUsersRepository()
+    sut = new RegisterService(usersRepository)
+  })
+
+  it('Should be able to register', async () => {
+    const { userCreated } = await sut.execute({
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: 'test123',
@@ -19,10 +24,7 @@ describe('Register Service', () => {
   })
 
   it('Should hash user password', async () => {
-    const usersRepository = new InMemoryUsersRepository()
-    const registerService = new RegisterService(usersRepository)
-
-    const { userCreated } = await registerService.execute({
+    const { userCreated } = await sut.execute({
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: 'test123',
@@ -37,19 +39,16 @@ describe('Register Service', () => {
   })
 
   it('Should not be able to register with same email twice', async () => {
-    const usersRepository = new InMemoryUsersRepository()
-    const registerService = new RegisterService(usersRepository)
-
     const email = 'johndoe@example.com'
 
-    await registerService.execute({
+    await sut.execute({
       name: 'John Doe',
       email,
       password: 'test123',
     })
 
     await expect(() =>
-      registerService.execute({
+      sut.execute({
         name: 'John Doe',
         email,
         password: 'test123',
