@@ -1,6 +1,6 @@
 import { CheckIn } from '@prisma/client'
-import { ResourceNotFoundError } from './errors/resource-not-found-error'
 import { CheckInsRepository } from '@/repositories/check-ins-repository'
+import { CannotChekInTwiceInTheSameDayError } from './errors/cannot-checkin-twice-in-the-same-day-error'
 
 interface CheckInServiceRequest {
   userId: string
@@ -18,14 +18,19 @@ export class CheckInService {
     userId,
     gymId,
   }: CheckInServiceRequest): Promise<CheckInServiceResponse> {
+    const checkInOnSameDay = await this.checkInsRepository.findByUserIdOnDate(
+      userId,
+      new Date(),
+    )
+
+    if (checkInOnSameDay) {
+      throw new CannotChekInTwiceInTheSameDayError()
+    }
+
     const checkIn = await this.checkInsRepository.create({
       user_id: userId,
       gym_id: gymId,
     })
-
-    if (!checkIn) {
-      throw new ResourceNotFoundError()
-    }
 
     return {
       checkIn,
