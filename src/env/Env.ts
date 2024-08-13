@@ -1,25 +1,18 @@
 import 'dotenv/config'
+import { z } from 'zod'
 
-class Env {
-  NODE_ENV?: string
-  PORT?: number | string
+const envSchema = z.object({
+  NODE_ENV: z.enum(['dev', 'test', 'production']).default('dev'),
+  JWT_SECRET: z.string(),
+  PORT: z.coerce.number().default(3333),
+})
 
-  constructor() {
-    if (this.NODE_ENV === undefined) {
-      this.NODE_ENV = 'dev'
-    }
+const env = envSchema.safeParse(process.env)
 
-    if (this.PORT === undefined) {
-      this.PORT = 3333
-    }
+if (env.success === false) {
+  console.error('❌ Invalid environment variables', env.error.format())
 
-    if (typeof this.PORT === 'string') {
-      this.PORT = parseInt(this.PORT)
-    }
-  }
+  throw new Error('Invalid environment variables.')
 }
 
-const _env = new Env()
-_env.PORT = process.env.PORT
-
-export { _env }
+export const _env = env.data
