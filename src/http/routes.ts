@@ -1,32 +1,16 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import { FastifyInstance } from 'fastify'
+import { verifyJWT } from './middlewares/verify-jwt'
+import { register } from './controllers/register'
+import { authenticate } from './controllers/authenticate'
+import { refresh } from './controllers/refresh'
+import { profile } from './controllers/profile'
 
 export async function appRoutes(app: FastifyInstance) {
-  app.get('/cookies', async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = await reply.jwtSign({
-      name: 'foo',
-    })
+  app.post('/users', register)
+  app.post('/sessions', authenticate)
 
-    const refreshToken = await reply.jwtSign(
-      {
-        name: 'bar',
-      },
-      { expiresIn: '1d' },
-    )
+  app.patch('/token/refresh', refresh)
 
-    reply
-      .setCookie('refreshToken', refreshToken, {
-        path: '/',
-        secure: true, // send cookie over HTTPS only
-        httpOnly: true,
-        sameSite: true, // alternative CSRF protection
-      })
-      .code(200)
-      .send({ token })
-  })
-
-  app.addHook('onRequest', (request) => request.jwtVerify({ onlyCookie: true }))
-
-  app.get('/verifycookie', (request, reply) => {
-    reply.send({ code: 'OK', message: request.cookies })
-  })
+  /** Authenticated */
+  app.get('/me', { onRequest: [verifyJWT] }, profile)
 }
